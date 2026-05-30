@@ -1,49 +1,45 @@
 import json
 import logging
+from functools import lru_cache
 from typing import Any, AsyncGenerator
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-_configured = False
+MODEL = "gemini-2.0-flash"
 
 
-def _configure() -> None:
-    global _configured
-    if not _configured:
-        settings = get_settings()
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        _configured = True
-
-
-def get_model(model_name: str = "gemini-2.0-flash") -> genai.GenerativeModel:
-    _configure()
-    return genai.GenerativeModel(model_name)
+@lru_cache(maxsize=1)
+def get_client() -> genai.Client:
+    settings = get_settings()
+    return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
 async def generate_json(prompt: str, schema_hint: str = "") -> dict[str, Any]:
-    _configure()
-    model = genai.GenerativeModel(
-        "gemini-2.0-flash",
-        generation_config=genai.GenerationConfig(
+    client = get_client()
+    full_prompt = prompt
+    if schema_hint:
+        full_prompt += f"\n\nExpected JSON schema:\n{schema_hint}"
+    full_prompt += "\n\nRespond with valid JSON only. No markdown, no code blocks."
+
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=full_prompt,
+        config=types.GenerateContentConfig(
             response_mime_type="application/json",
             temperature=0.3,
         ),
     )
-    full_prompt = f"{prompt}\n\nRespond with valid JSON only."
-    if schema_hint:
-        full_prompt += f"\n\nExpected JSON schema:\n{schema_hint}"
 
-    response = model.generate_content(full_prompt)
     text = response.text.strip()
+    # Strip markdown fences if model still wraps in them
     if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-        text = text.strip()
+        lines = text.split("\n")
+        text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
     return json.loads(text)
 
 
@@ -51,22 +47,28 @@ async def stream_text(
     system_prompt: str,
     messages: list[dict[str, str]],
 ) -> AsyncGenerator[str, None]:
-    _configure()
-    model = genai.GenerativeModel(
-        "gemini-2.0-flash",
+    client = get_client()
+
+    # Build contents list for the new SDK
+    contents: list[types.Content] = []
+    for msg in messages:
+        role = "user" if msg["role"] == "user" else "model"
+        contents.append(
+            types.Content(
+                role=role,
+                parts=[types.Part(text=msg["content"])],
+            )
+        )
+
+    config = types.GenerateContentConfig(
         system_instruction=system_prompt,
-        generation_config=genai.GenerationConfig(temperature=0.7),
+        temperature=0.7,
     )
 
-    history = []
-    for msg in messages[:-1]:
-        role = "user" if msg["role"] == "user" else "model"
-        history.append({"role": role, "parts": [msg["content"]]})
-
-    chat = model.start_chat(history=history)
-    last_message = messages[-1]["content"] if messages else ""
-
-    response = chat.send_message(last_message, stream=True)
-    for chunk in response:
+    for chunk in client.models.generate_content_stream(
+        model=MODEL,
+        contents=contents,
+        config=config,
+    ):
         if chunk.text:
             yield chunk.text

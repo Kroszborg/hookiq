@@ -24,11 +24,13 @@ VECTOR_SIZE = 384  # BAAI/bge-small-en-v1.5
 def get_qdrant_client() -> QdrantClient:
     settings = get_settings()
     logger.info("Connecting to Qdrant at %s", settings.QDRANT_URL)
-    return QdrantClient(url=settings.QDRANT_URL)
+    return QdrantClient(url=settings.QDRANT_URL, timeout=10)
 
 
 def ensure_collection() -> None:
     settings = get_settings()
+    # Clear cached client so we get a fresh connection if Qdrant wasn't ready earlier
+    get_qdrant_client.cache_clear()
     client = get_qdrant_client()
     collections = [c.name for c in client.get_collections().collections]
     if settings.QDRANT_COLLECTION not in collections:
@@ -50,6 +52,11 @@ def upsert_chunks(
 ) -> None:
     settings = get_settings()
     client = get_qdrant_client()
+    # Ensure collection exists before upsert
+    try:
+        ensure_collection()
+    except Exception:
+        pass
 
     points = [
         PointStruct(
