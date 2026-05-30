@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+.venv/
+venv/
+env/
+*.db
+*.sqlite3
+hookiq.db
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+
+# ML model caches
+backend/app/.cache/
+
+# Docker runtime data
+backend/data/
+qdrant_storage/
+
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+!backend/.env.example
+!frontend/.env.local.example
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Temp audio (Whisper transcription artifacts)
+*.mp3
+*.m4a
+*.wav
