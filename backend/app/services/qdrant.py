@@ -29,7 +29,6 @@ def get_qdrant_client() -> QdrantClient:
 
 def ensure_collection() -> None:
     settings = get_settings()
-    # Clear cached client so we get a fresh connection if Qdrant wasn't ready earlier
     get_qdrant_client.cache_clear()
     client = get_qdrant_client()
     collections = [c.name for c in client.get_collections().collections]
@@ -52,7 +51,6 @@ def upsert_chunks(
 ) -> None:
     settings = get_settings()
     client = get_qdrant_client()
-    # Ensure collection exists before upsert
     try:
         ensure_collection()
     except Exception:
@@ -85,12 +83,13 @@ def search_chunks(
     label: str,
     top_k: int = 5,
 ) -> list[dict[str, Any]]:
+    """Search chunks using query_points (qdrant-client >= 1.7, replaces search())."""
     settings = get_settings()
     client = get_qdrant_client()
 
-    results = client.search(
+    results = client.query_points(
         collection_name=settings.QDRANT_COLLECTION,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=Filter(
             must=[
                 FieldCondition(key="analysis_id", match=MatchValue(value=analysis_id)),
@@ -101,14 +100,16 @@ def search_chunks(
         with_payload=True,
     )
 
+    points = results.points if hasattr(results, "points") else results
+
     return [
         {
-            "chunk_id": r.payload.get("chunk_id", i),
-            "content": r.payload.get("content", ""),
-            "label": r.payload.get("label", label),
-            "score": r.score,
+            "chunk_id": p.payload.get("chunk_id", i) if p.payload else i,
+            "content": p.payload.get("content", "") if p.payload else "",
+            "label": p.payload.get("label", label) if p.payload else label,
+            "score": p.score,
         }
-        for i, r in enumerate(results)
+        for i, p in enumerate(points)
     ]
 
 

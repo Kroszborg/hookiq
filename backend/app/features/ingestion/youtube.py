@@ -6,9 +6,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
-
 from app.models.schemas import VideoData
 
 logger = logging.getLogger(__name__)
@@ -33,9 +30,7 @@ def _get_ytdlp_metadata(url: str) -> dict[str, Any]:
     try:
         result = subprocess.run(
             ["yt-dlp", "--dump-json", "--no-playlist", "--skip-download", url],
-            capture_output=True,
-            text=True,
-            timeout=60,
+            capture_output=True, text=True, timeout=60,
         )
         if result.returncode == 0 and result.stdout.strip():
             return json.loads(result.stdout.strip())
@@ -47,18 +42,9 @@ def _get_ytdlp_metadata(url: str) -> dict[str, Any]:
 def _download_audio_ytdlp(url: str, output_path: str) -> bool:
     try:
         result = subprocess.run(
-            [
-                "yt-dlp",
-                "--extract-audio",
-                "--audio-format", "mp3",
-                "--audio-quality", "5",
-                "--no-playlist",
-                "-o", output_path,
-                url,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=300,
+            ["yt-dlp", "--extract-audio", "--audio-format", "mp3",
+             "--audio-quality", "5", "--no-playlist", "-o", output_path, url],
+            capture_output=True, text=True, timeout=300,
         )
         return result.returncode == 0
     except Exception as e:
@@ -72,10 +58,43 @@ def _transcribe_with_whisper(audio_path: str) -> tuple[str, list[dict]]:
     settings = get_settings()
     model = WhisperModel(settings.WHISPER_MODEL, device=settings.WHISPER_DEVICE, compute_type=settings.WHISPER_COMPUTE_TYPE)
     segments, _ = model.transcribe(audio_path, beam_size=5)
-    segments_list = list(segments)
-    full_text = " ".join(s.text.strip() for s in segments_list)
-    seg_dicts = [{"start": s.start, "end": s.end, "text": s.text.strip()} for s in segments_list]
+    segs = list(segments)
+    full_text = " ".join(s.text.strip() for s in segs)
+    seg_dicts = [{"start": s.start, "end": s.end, "text": s.text.strip()} for s in segs]
     return full_text, seg_dicts
+
+
+def _fetch_transcript_v1(video_id: str) -> tuple[str, list[dict]] | None:
+    """youtube-transcript-api v1.x uses instance-based API."""
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        api = YouTubeTranscriptApi()
+        fetched = api.fetch(video_id)
+        # FetchedTranscript is iterable; each item has .text, .start, .duration
+        segments = []
+        texts = []
+        for snippet in fetched:
+            texts.append(snippet.text)
+            segments.append({
+                "start": snippet.start,
+                "end": snippet.start + snippet.duration,
+                "text": snippet.text,
+            })
+        return " ".join(texts), segments
+    except Exception:
+        return None
+
+
+def _fetch_transcript_legacy(video_id: str) -> tuple[str, list[dict]] | None:
+    """youtube-transcript-api v0.6.x class-method API."""
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        raw = YouTubeTranscriptApi.get_transcript(video_id)
+        text = " ".join(s["text"] for s in raw)
+        segs = [{"start": s["start"], "end": s["start"] + s.get("duration", 0), "text": s["text"]} for s in raw]
+        return text, segs
+    except Exception:
+        return None
 
 
 async def extract_youtube(url: str) -> VideoData:
@@ -104,18 +123,13 @@ async def extract_youtube(url: str) -> VideoData:
 
     video_id = _extract_video_id(url)
     if video_id:
-        try:
-            raw_segments = YouTubeTranscriptApi.get_transcript(video_id)
-            transcript_text = " ".join(s["text"] for s in raw_segments)
-            transcript_segments = [
-                {"start": s["start"], "end": s["start"] + s.get("duration", 0), "text": s["text"]}
-                for s in raw_segments
-            ]
+        # Try v1.x API first, fall back to legacy
+        result = _fetch_transcript_v1(video_id) or _fetch_transcript_legacy(video_id)
+        if result:
+            transcript_text, transcript_segments = result
             logger.info("Got YouTube transcript via API for %s", video_id)
-        except (NoTranscriptFound, TranscriptsDisabled):
+        else:
             logger.info("No transcript via API for %s, falling back to Whisper", video_id)
-        except Exception as e:
-            logger.warning("Transcript API error: %s", e)
 
     if not transcript_text:
         with tempfile.TemporaryDirectory() as tmpdir:
