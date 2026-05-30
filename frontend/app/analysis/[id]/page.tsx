@@ -10,6 +10,7 @@ import { InsightsPanel } from "@/components/analysis/InsightsPanel";
 import { TimelineView } from "@/components/analysis/TimelineView";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { getAnalysis } from "@/lib/api";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { Analysis } from "@/types";
 
 interface Props {
@@ -49,6 +50,7 @@ export default function AnalysisPage({ params }: Props) {
               Share →
             </Link>
           )}
+          <ThemeToggle />
           <span className={`font-mono text-[10px] tracking-wider uppercase ${phase === "complete" ? "text-emerald-500" : phase === "error" ? "text-red-400" : "text-muted-foreground/50"}`}>
             {phase === "loading" ? "—" : phase === "processing" ? "Processing" : phase === "complete" ? "Complete" : "Failed"}
           </span>

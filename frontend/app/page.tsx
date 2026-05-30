@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { startAnalysis } from "@/lib/api";
 import { detectPlatform } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const FADE_UP = {
   hidden: { opacity: 0, y: 16 },
@@ -50,9 +51,10 @@ export default function HomePage() {
       {/* Top nav */}
       <nav className="flex items-center justify-between px-6 py-5 border-b border-border/40">
         <span className="font-mono text-xs tracking-widest text-muted-foreground uppercase">HookIQ</span>
-        <div className="flex items-center gap-6 text-xs text-muted-foreground font-medium">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
           <a href="#how-it-works" className="hover:text-foreground transition-colors">How it works</a>
           <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-foreground transition-colors">GitHub</a>
+          <ThemeToggle />
         </div>
       </nav>
 
