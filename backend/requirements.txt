@@ -11,8 +11,12 @@ aiosqlite>=0.20.0
 pydantic-settings>=2.5.0
 python-dotenv>=1.0.0
 
-# Google AI — new SDK (google-genai v2.x, not the old google-generativeai)
+# Google AI (optional fallback)
 google-genai>=2.0.0
+
+# Groq (primary LLM — free tier, fast, OpenAI-compatible)
+groq>=0.12.0
+langchain-groq>=0.2.0
 
 # LangChain / LangGraph
 langchain-core>=1.0.0

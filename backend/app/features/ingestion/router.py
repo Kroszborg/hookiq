@@ -120,18 +120,19 @@ async def get_analysis(
                 thumbnail_url=v.thumbnail_url,
             )
 
-    return AnalysisResponse(
-        id=analysis.id,
-        status=analysis.status,
-        video_a=video_a,
-        video_b=video_b,
-        hook_analysis_a=analysis.hook_analysis_a,
-        hook_analysis_b=analysis.hook_analysis_b,
-        structure_a=analysis.structure_a,
-        structure_b=analysis.structure_b,
-        viral_patterns_a=analysis.viral_patterns_a,
-        viral_patterns_b=analysis.viral_patterns_b,
-        recommendations=analysis.recommendations,
-        comparison_insights=analysis.comparison_insights,
-        error_message=analysis.error_message,
-    )
+    # Use model_validate so dicts from DB are coerced to typed Pydantic models
+    return AnalysisResponse.model_validate({
+        "id": analysis.id,
+        "status": analysis.status,
+        "video_a": video_a,
+        "video_b": video_b,
+        "hook_analysis_a": analysis.hook_analysis_a,
+        "hook_analysis_b": analysis.hook_analysis_b,
+        "structure_a": analysis.structure_a,
+        "structure_b": analysis.structure_b,
+        "viral_patterns_a": analysis.viral_patterns_a,
+        "viral_patterns_b": analysis.viral_patterns_b,
+        "recommendations": analysis.recommendations,
+        "comparison_insights": analysis.comparison_insights,
+        "error_message": analysis.error_message,
+    })
