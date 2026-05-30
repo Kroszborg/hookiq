@@ -22,14 +22,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${manrope.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className={`${manrope.variable} ${jetbrainsMono.variable} antialiased`}>
+      <body className="antialiased bg-background text-foreground font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>

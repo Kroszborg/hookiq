@@ -16,11 +16,21 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # LLM provider — set LLM_PROVIDER=groq in .env to use Groq (recommended)
+      - LLM_PROVIDER=${LLM_PROVIDER:-groq}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      # Gemini fallback
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+      # Vector DB
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-video_chunks}
+      # Database
       - DATABASE_URL=sqlite+aiosqlite:////app/data/hookiq.db
+      # CORS
       - FRONTEND_URL=${FRONTEND_URL:-*}
+      # Whisper
       - WHISPER_MODEL=${WHISPER_MODEL:-tiny}
       - WHISPER_DEVICE=${WHISPER_DEVICE:-cpu}
       - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8}
