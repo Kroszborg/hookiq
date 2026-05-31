@@ -25,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       className={`${manrope.variable} ${jetbrainsMono.variable}`}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <head>
