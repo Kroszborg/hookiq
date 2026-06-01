@@ -14,6 +14,7 @@ export interface VideoCard {
   hashtags: string[];
   thumbnail_url: string | null;
   transcript?: string | null;
+  transcript_segments?: { start: number; end: number; text: string }[] | null;
 }
 
 export interface HookAnalysis {

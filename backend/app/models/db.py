@@ -29,6 +29,7 @@ class Video(Base):
     upload_date: Mapped[str | None] = mapped_column(String(20))
     hashtags: Mapped[list | None] = mapped_column(JSON)
     transcript: Mapped[str | None] = mapped_column(Text)
+    transcript_segments: Mapped[list | None] = mapped_column(JSON)  # [{start, end, text}]
     thumbnail_url: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 

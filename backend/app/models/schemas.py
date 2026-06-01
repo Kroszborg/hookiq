@@ -59,7 +59,8 @@ class VideoCardResponse(BaseModel):
     upload_date: str | None
     hashtags: list[str]
     thumbnail_url: str | None
-    transcript: str | None = None  # Full transcript text for display
+    transcript: str | None = None  # Full transcript text
+    transcript_segments: list[dict] | None = None  # [{start, end, text}] for timed display
 
 
 # ── Intelligence Layer ─────────────────────────────────────────────────────

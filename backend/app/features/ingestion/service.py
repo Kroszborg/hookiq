@@ -76,6 +76,7 @@ async def _save_video(db: AsyncSession, video_data: VideoData) -> Video:
         upload_date=video_data.upload_date,
         hashtags=video_data.hashtags,
         transcript=video_data.transcript,
+        transcript_segments=video_data.transcript_segments or [],
         thumbnail_url=video_data.thumbnail_url,
     )
     db.add(video)

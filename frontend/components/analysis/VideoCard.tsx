@@ -10,7 +10,6 @@ interface Props {
   patterns?: ViralPatterns | null;
   structure?: StructureSegment[] | null;
   transcript?: string | null;
-  transcriptSegments?: { start: number; end: number; text: string }[];
 }
 
 function PlatformBadge({ platform }: { platform: string }) {
@@ -38,7 +37,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function VideoCard({ video, label, hook, patterns, structure, transcript, transcriptSegments }: Props) {
+export function VideoCard({ video, label, hook, patterns, structure, transcript }: Props) {
   const hasViews = video.views !== null && video.views !== undefined;
   const rawEngagement = (video.likes ?? 0) + (video.comments ?? 0);
 
@@ -137,7 +136,7 @@ export function VideoCard({ video, label, hook, patterns, structure, transcript,
         {/* Transcript viewer */}
         <TranscriptViewer
           transcript={transcript ?? null}
-          transcriptSegments={transcriptSegments}
+          transcriptSegments={video.transcript_segments}
           structureSegments={structure ?? []}
           label={label}
         />

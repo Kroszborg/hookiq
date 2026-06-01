@@ -114,6 +114,7 @@ async def get_analysis(
                 hashtags=v.hashtags or [],
                 thumbnail_url=v.thumbnail_url,
                 transcript=v.transcript,
+                transcript_segments=v.transcript_segments or [],
             )
 
     if analysis.video_b_id:

@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { Analysis, HookAnalysis, ViralPatterns } from "@/types";
+import { computeViralScore } from "./ViralScore";
 
 interface Props {
   analysis: Analysis;
@@ -75,11 +76,48 @@ function ViralPatternGrid({ patterns }: { patterns: ViralPatterns }) {
   );
 }
 
+function getHookLine(video: Analysis["video_a"], segments: Analysis["structure_a"]): string | null {
+  if (!video?.transcript_segments?.length) return null;
+  const hookSeg = segments?.find(s => s.segment.toLowerCase() === "hook");
+  const hookEnd = hookSeg?.end_time ?? 5;
+  const lines = video.transcript_segments
+    .filter(s => s.start <= hookEnd)
+    .map(s => s.text.trim())
+    .filter(Boolean);
+  if (!lines.length) return null;
+  const combined = lines.join(" ");
+  return combined.length > 120 ? combined.slice(0, 117) + "…" : combined;
+}
+
 export function InsightsPanel({ analysis }: Props) {
-  const { hook_analysis_a, hook_analysis_b, viral_patterns_a, viral_patterns_b, recommendations, comparison_insights } = analysis;
+  const { hook_analysis_a, hook_analysis_b, viral_patterns_a, viral_patterns_b, recommendations, comparison_insights, video_a, video_b, structure_a, structure_b } = analysis;
+
+  const hookLineA = getHookLine(video_a, structure_a);
+  const hookLineB = getHookLine(video_b, structure_b);
 
   return (
     <div className="space-y-6">
+
+      {/* What stopped the scroll */}
+      {(hookLineA || hookLineB) && (
+        <div className="space-y-3">
+          <SectionLabel>What stopped the scroll</SectionLabel>
+          <div className="space-y-2">
+            {hookLineA && (
+              <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-3">
+                <p className="font-mono text-[9px] text-purple-400/60 tracking-widest uppercase mb-1.5">Video A · Hook</p>
+                <p className="text-sm italic leading-relaxed text-foreground/90">&ldquo;{hookLineA}&rdquo;</p>
+              </div>
+            )}
+            {hookLineB && (
+              <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3">
+                <p className="font-mono text-[9px] text-blue-400/60 tracking-widest uppercase mb-1.5">Video B · Hook</p>
+                <p className="text-sm italic leading-relaxed text-foreground/90">&ldquo;{hookLineB}&rdquo;</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Winner */}
       {comparison_insights && (
@@ -184,6 +222,47 @@ export function InsightsPanel({ analysis }: Props) {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Performance Benchmark */}
+      {(video_a || video_b) && (hook_analysis_a || hook_analysis_b) && (
+        <div className="space-y-3">
+          <SectionLabel>Performance benchmark</SectionLabel>
+          <div className="bg-white/[0.02] border border-border/40 rounded-xl p-4 space-y-3">
+            {[
+              { label: "Video A", video: video_a, hook: hook_analysis_a, patterns: viral_patterns_a, color: "text-white" },
+              { label: "Video B", video: video_b, hook: hook_analysis_b, patterns: viral_patterns_b, color: "text-white/60" },
+            ].filter(({ video }) => video).map(({ label, video, hook, patterns, color }) => {
+              if (!video) return null;
+              const score = computeViralScore(video, hook ?? null, patterns ?? null);
+              const er = video.engagement_rate;
+              const erLabel = er === null ? "N/A" : er >= 5 ? "Strong" : er >= 2 ? "Average" : "Weak";
+              const erColor = er === null ? "text-muted-foreground" : er >= 5 ? "text-emerald-400" : er >= 2 ? "text-yellow-400" : "text-red-400";
+              return (
+                <div key={label} className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <span className={`font-mono text-[10px] ${color} shrink-0 w-12`}>{label}</span>
+                    <div className="flex-1 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                      <div className="h-full bg-white/30 rounded-full" style={{ width: `${score}%` }} />
+                    </div>
+                    <span className={`font-mono text-[10px] shrink-0 ${color}`}>{score}/100</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`font-mono text-[10px] ${erColor}`}>
+                      {er !== null ? `${er.toFixed(1)}% ER` : "— ER"}
+                    </span>
+                    <span className={`font-mono text-[9px] uppercase tracking-wider ${erColor} opacity-60`}>
+                      {erLabel}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            <p className="text-[10px] text-muted-foreground/30 font-mono pt-0.5">
+              Industry avg ≈ 3.5% · 2–5% average · 5%+ strong
+            </p>
           </div>
         </div>
       )}
