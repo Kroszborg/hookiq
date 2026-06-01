@@ -114,9 +114,17 @@ Return JSON:
 
 async def _generate_comparison(video_a: VideoData, video_b: VideoData) -> dict[str, Any]:
     def fmt(v: VideoData, label: str) -> str:
-        return (f"Video {label}: {v.creator} | {v.views or 0:,} views | "
+        er = f"{v.engagement_rate:.2f}%" if v.engagement_rate is not None else "N/A (no view count)"
+        views = f"{v.views:,}" if v.views is not None else "N/A"
+        return (f"Video {label}: {v.creator or 'Unknown'} | {views} views | "
                 f"{v.likes or 0:,} likes | {v.comments or 0:,} comments | "
-                f"{v.engagement_rate or 0:.2f}% engagement")
+                f"{er} engagement rate")
+
+    # Safe delta calculation — use 0 for missing values but note it
+    er_a = video_a.engagement_rate or 0
+    er_b = video_b.engagement_rate or 0
+    both_have_er = video_a.engagement_rate is not None and video_b.engagement_rate is not None
+    delta_note = "" if both_have_er else " (note: one video has no view count, so engagement rate comparison is approximate)"
 
     prompt = f"""{fmt(video_a, 'A')}
 {fmt(video_b, 'B')}
@@ -125,11 +133,12 @@ Transcript A (first 600 chars): "{(video_a.transcript or '')[:600]}"
 Transcript B (first 600 chars): "{(video_b.transcript or '')[:600]}"
 
 Compare these videos. Which performed better and WHY specifically?
+If engagement rate is N/A for a video, base the comparison on likes, comments, and content quality instead.{delta_note}
 
 Return JSON:
 {{
   "winner": "<A or B or tie>",
-  "performance_delta_pct": <float>,
+  "performance_delta_pct": <float — absolute difference in engagement rates, or 0 if data unavailable>,
   "hook_comparison": "<2-3 sentences comparing the hooks>",
   "content_comparison": "<2-3 sentences comparing content>",
   "summary": "<2-3 sentence overall analysis>"
@@ -140,23 +149,28 @@ Return JSON:
         logger.warning("Comparison failed: %s", e)
         er_a = video_a.engagement_rate or 0
         er_b = video_b.engagement_rate or 0
+        _both = video_a.engagement_rate is not None and video_b.engagement_rate is not None
         winner = "A" if er_a > er_b else ("B" if er_b > er_a else "tie")
         return {
             "winner": winner,
-            "performance_delta_pct": round(abs(er_a - er_b), 2),
+            "performance_delta_pct": round(abs(er_a - er_b), 2) if _both else 0.0,
             "hook_comparison": "Hook comparison unavailable — retry later.",
             "content_comparison": "Content comparison unavailable — retry later.",
-            "summary": f"Video {winner} had higher engagement rate ({max(er_a, er_b):.2f}% vs {min(er_a, er_b):.2f}%).",
+            "summary": (
+                f"Video {winner} had higher engagement ({max(er_a, er_b):.2f}% vs {min(er_a, er_b):.2f}%)."
+                if _both else
+                f"Video {winner} had more available engagement data."
+            ),
         }
 
 
 async def _generate_recommendations(video_a: VideoData, video_b: VideoData) -> list[dict[str, Any]]:
     prompt = f"""You are a viral content strategist.
 
-Video A (better performer): {video_a.creator} — {video_a.views or 0:,} views, {video_a.engagement_rate or 0:.2f}% engagement
+Video A (better performer): {video_a.creator} — {f"{video_a.views:,}" if video_a.views else "N/A"} views, {f"{video_a.engagement_rate:.2f}%" if video_a.engagement_rate is not None else "N/A"} engagement
 Transcript A (first 800 chars): "{(video_a.transcript or '')[:800]}"
 
-Video B (needs improvement): {video_b.creator} — {video_b.views or 0:,} views, {video_b.engagement_rate or 0:.2f}% engagement
+Video B (needs improvement): {video_b.creator} — {f"{video_b.views:,}" if video_b.views else "N/A"} views, {f"{video_b.engagement_rate:.2f}%" if video_b.engagement_rate is not None else "N/A"} engagement
 Transcript B (first 800 chars): "{(video_b.transcript or '')[:800]}"
 
 Give 5 specific, actionable improvements for Video B based on what worked in Video A.
