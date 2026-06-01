@@ -18,14 +18,13 @@ router = APIRouter(prefix="/analyze", tags=["ingestion"])
 
 
 def _validate_url(url: str, label: str) -> None:
-    """Reject URLs that are clearly not YouTube or Instagram."""
-    url_lower = url.lower().strip()
-    is_yt = any(x in url_lower for x in ["youtube.com", "youtu.be"])
-    is_ig = "instagram.com" in url_lower
-    if not (is_yt or is_ig):
+    """Reject URLs that are clearly not YouTube, Instagram, or TikTok."""
+    u = url.lower().strip()
+    supported = ["youtube.com", "youtu.be", "instagram.com", "tiktok.com"]
+    if not any(x in u for x in supported):
         raise HTTPException(
             status_code=422,
-            detail=f"{label} must be a YouTube or Instagram URL. Got: {url[:80]}"
+            detail=f"{label} must be a YouTube, Instagram, or TikTok URL. Got: {url[:80]}"
         )
 
 
@@ -112,6 +111,7 @@ async def get_analysis(
                 upload_date=v.upload_date,
                 hashtags=v.hashtags or [],
                 thumbnail_url=v.thumbnail_url,
+                transcript=v.transcript,
             )
 
     if analysis.video_b_id:

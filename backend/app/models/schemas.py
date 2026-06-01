@@ -46,7 +46,7 @@ class VideoData(BaseModel):
 class VideoCardResponse(BaseModel):
     """Video metadata returned in the analysis dashboard."""
     id: str
-    platform: Literal["youtube", "instagram"]
+    platform: str  # youtube | instagram | tiktok
     url: str
     title: str | None
     creator: str | None
@@ -59,6 +59,7 @@ class VideoCardResponse(BaseModel):
     upload_date: str | None
     hashtags: list[str]
     thumbnail_url: str | None
+    transcript: str | None = None  # Full transcript text for display
 
 
 # ── Intelligence Layer ─────────────────────────────────────────────────────

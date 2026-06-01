@@ -96,15 +96,26 @@ async def run_analysis_pipeline(analysis_id: str, url_a: str, url_b: str) -> Non
 
             # detect platforms
             def detect_platform(url: str) -> str:
-                if "instagram.com" in url:
+                u = url.lower()
+                if "instagram.com" in u:
                     return "instagram"
+                if "tiktok.com" in u:
+                    return "tiktok"
                 return "youtube"
+
+            def get_extractor(platform: str):
+                if platform == "instagram":
+                    return extract_instagram
+                if platform == "tiktok":
+                    from app.features.ingestion.tiktok import extract_tiktok
+                    return extract_tiktok
+                return extract_youtube
 
             platform_a = detect_platform(url_a)
             platform_b = detect_platform(url_b)
 
-            extractor_a = extract_instagram if platform_a == "instagram" else extract_youtube
-            extractor_b = extract_instagram if platform_b == "instagram" else extract_youtube
+            extractor_a = get_extractor(platform_a)
+            extractor_b = get_extractor(platform_b)
 
             video_a_data, video_b_data = await asyncio.gather(
                 extractor_a(url_a),

@@ -1,6 +1,6 @@
 export interface VideoCard {
   id: string;
-  platform: "youtube" | "instagram";
+  platform: string; // "youtube" | "instagram" | "tiktok"
   url: string;
   title: string | null;
   creator: string | null;
@@ -13,6 +13,7 @@ export interface VideoCard {
   upload_date: string | null;
   hashtags: string[];
   thumbnail_url: string | null;
+  transcript?: string | null;
 }
 
 export interface HookAnalysis {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,8 +9,8 @@ import { VideoCard } from "@/components/analysis/VideoCard";
 import { InsightsPanel } from "@/components/analysis/InsightsPanel";
 import { TimelineView } from "@/components/analysis/TimelineView";
 import { ChatPanel } from "@/components/chat/ChatPanel";
-import { getAnalysis } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { getAnalysis, startAnalysis } from "@/lib/api";
 import type { Analysis } from "@/types";
 
 interface Props {
@@ -25,17 +25,41 @@ export default function AnalysisPage({ params }: Props) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"insights" | "chat">("insights");
+  const [reanalyzing, setReanalyzing] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     getAnalysis(id)
       .then((data) => {
         setAnalysis(data);
         if (data.status === "complete") setPhase("complete");
-        else if (data.status === "failed") { setPhase("error"); setErrorMsg(data.error_message || "Analysis failed."); }
-        else setPhase("processing");
+        else if (data.status === "failed") {
+          setPhase("error");
+          setErrorMsg(data.error_message || "Analysis failed.");
+        } else setPhase("processing");
       })
       .catch(() => { setPhase("error"); setErrorMsg("Could not load analysis."); });
   }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleReanalyze = async () => {
+    if (!analysis?.video_a?.url || !analysis?.video_b?.url) return;
+    setReanalyzing(true);
+    try {
+      const { analysis_id } = await startAnalysis(analysis.video_a.url, analysis.video_b.url);
+      window.location.href = `/analysis/${analysis_id}`;
+    } catch {
+      setReanalyzing(false);
+    }
+  };
+
+  // Pull transcript segments from the VideoCard data
+  // The backend stores transcript but not transcript_segments in VideoCardResponse
+  // We parse from the transcript text directly for display
+  const getTranscriptSegments = (transcript: string | null | undefined) => {
+    if (!transcript) return [];
+    return []; // Would need backend support for timed segments in VideoCardResponse
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -45,14 +69,27 @@ export default function AnalysisPage({ params }: Props) {
           HookIQ
         </Link>
         <div className="flex items-center gap-4">
-          {phase === "complete" && (
-            <Link href={`/report/${id}`} className="font-mono text-[10px] tracking-wider text-muted-foreground hover:text-foreground uppercase transition-colors">
-              Share →
-            </Link>
+          {phase === "complete" && analysis && (
+            <>
+              <button
+                onClick={handleReanalyze}
+                disabled={reanalyzing}
+                className="font-mono text-[10px] tracking-wider text-muted-foreground hover:text-foreground uppercase transition-colors disabled:opacity-40"
+              >
+                {reanalyzing ? "Starting..." : "↻ Re-analyze"}
+              </button>
+              <Link href={`/report/${id}`} className="font-mono text-[10px] tracking-wider text-muted-foreground hover:text-foreground uppercase transition-colors">
+                Share →
+              </Link>
+            </>
           )}
           <ThemeToggle />
-          <span className={`font-mono text-[10px] tracking-wider uppercase ${phase === "complete" ? "text-emerald-500" : phase === "error" ? "text-red-400" : "text-muted-foreground/50"}`}>
-            {phase === "loading" ? "—" : phase === "processing" ? "Processing" : phase === "complete" ? "Complete" : "Failed"}
+          <span className={`font-mono text-[10px] tracking-wider uppercase ${
+            phase === "complete" ? "text-emerald-500" :
+            phase === "error" ? "text-red-400" : "text-muted-foreground/50"
+          }`}>
+            {phase === "loading" ? "—" : phase === "processing" ? "Processing" :
+             phase === "complete" ? "Complete" : "Failed"}
           </span>
         </div>
       </header>
@@ -91,7 +128,7 @@ export default function AnalysisPage({ params }: Props) {
         </div>
       )}
 
-      {/* Complete — main dashboard */}
+      {/* Complete */}
       <AnimatePresence>
         {phase === "complete" && analysis && (
           <motion.div
@@ -103,14 +140,34 @@ export default function AnalysisPage({ params }: Props) {
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               {/* Video cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {analysis.video_a && <VideoCard video={analysis.video_a} label="A" />}
-                {analysis.video_b && <VideoCard video={analysis.video_b} label="B" />}
+                {analysis.video_a && (
+                  <VideoCard
+                    video={analysis.video_a}
+                    label="A"
+                    hook={analysis.hook_analysis_a}
+                    patterns={analysis.viral_patterns_a}
+                    structure={analysis.structure_a}
+                    transcript={(analysis.video_a as any).transcript}
+                    transcriptSegments={getTranscriptSegments((analysis.video_a as any).transcript)}
+                  />
+                )}
+                {analysis.video_b && (
+                  <VideoCard
+                    video={analysis.video_b}
+                    label="B"
+                    hook={analysis.hook_analysis_b}
+                    patterns={analysis.viral_patterns_b}
+                    structure={analysis.structure_b}
+                    transcript={(analysis.video_b as any).transcript}
+                    transcriptSegments={getTranscriptSegments((analysis.video_b as any).transcript)}
+                  />
+                )}
               </div>
 
               {/* Timelines */}
               {(analysis.structure_a || analysis.structure_b) && (
                 <div className="bg-white/[0.02] border border-border/40 rounded-xl p-5 space-y-5">
-                  <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">Content Timeline</p>
+                  <p className="font-mono text-[9px] tracking-widest text-muted-foreground/50 uppercase">Content Timeline</p>
                   <div className="space-y-5">
                     {analysis.structure_a && analysis.video_a && (
                       <TimelineView segments={analysis.structure_a} duration={analysis.video_a.duration || 60} label="A" />
@@ -131,7 +188,9 @@ export default function AnalysisPage({ params }: Props) {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`flex-1 py-3 font-mono text-[10px] tracking-widest uppercase transition-colors ${activeTab === tab ? "text-foreground border-b border-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`flex-1 py-3 font-mono text-[10px] tracking-widest uppercase transition-colors ${
+                      activeTab === tab ? "text-foreground border-b border-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
                   >
                     {tab}
                   </button>

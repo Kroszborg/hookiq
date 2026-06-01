@@ -165,7 +165,7 @@ export default function HomePage() {
             </button>
 
             <p className="text-[11px] text-muted-foreground/50 text-center font-mono">
-              Supports YouTube Shorts and Instagram Reels
+              YouTube Shorts · Instagram Reels · TikTok
             </p>
           </motion.div>
 
@@ -202,7 +202,7 @@ export default function HomePage() {
           HOOKIQ · RAG-POWERED VIDEO ANALYSIS
         </span>
         <span className="font-mono text-[10px] text-muted-foreground/30">
-          Gemini · LangGraph · Qdrant
+          Groq LLaMA 3.3 · LangGraph · Qdrant · BGE Embeddings
         </span>
       </footer>
     </div>
