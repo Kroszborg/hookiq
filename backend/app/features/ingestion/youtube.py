@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import json
 import logging
@@ -65,28 +66,22 @@ def _transcribe_with_whisper(audio_path: str) -> tuple[str, list[dict]]:
 
 
 def _fetch_transcript_v1(video_id: str) -> tuple[str, list[dict]] | None:
-    """youtube-transcript-api v1.x uses instance-based API."""
+    """youtube-transcript-api v1.x instance API."""
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
         api = YouTubeTranscriptApi()
         fetched = api.fetch(video_id)
-        # FetchedTranscript is iterable; each item has .text, .start, .duration
-        segments = []
-        texts = []
-        for snippet in fetched:
-            texts.append(snippet.text)
-            segments.append({
-                "start": snippet.start,
-                "end": snippet.start + snippet.duration,
-                "text": snippet.text,
-            })
-        return " ".join(texts), segments
+        texts, segs = [], []
+        for s in fetched:
+            texts.append(s.text)
+            segs.append({"start": s.start, "end": s.start + s.duration, "text": s.text})
+        return " ".join(texts), segs
     except Exception:
         return None
 
 
 def _fetch_transcript_legacy(video_id: str) -> tuple[str, list[dict]] | None:
-    """youtube-transcript-api v0.6.x class-method API."""
+    """youtube-transcript-api v0.6.x class method API."""
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
         raw = YouTubeTranscriptApi.get_transcript(video_id)
@@ -97,7 +92,8 @@ def _fetch_transcript_legacy(video_id: str) -> tuple[str, list[dict]] | None:
         return None
 
 
-async def extract_youtube(url: str) -> VideoData:
+def _extract_youtube_sync(url: str) -> VideoData:
+    """Synchronous extraction — runs in thread pool via asyncio.to_thread."""
     url_hash = hashlib.sha256(url.strip().encode()).hexdigest()
     meta = _get_ytdlp_metadata(url)
 
@@ -115,23 +111,22 @@ async def extract_youtube(url: str) -> VideoData:
     if upload_date_raw and len(upload_date_raw) == 8:
         upload_date = f"{upload_date_raw[:4]}-{upload_date_raw[4:6]}-{upload_date_raw[6:]}"
 
-    hashtags = meta.get("tags", []) or []
+    hashtags = list(meta.get("tags", []) or [])
     thumbnail = meta.get("thumbnail") or (meta.get("thumbnails") or [{}])[-1].get("url")
+    duration = meta.get("duration")  # may be float from yt-dlp
 
-    transcript_text = None
+    transcript_text: str | None = None
     transcript_segments: list[dict] = []
 
     video_id = _extract_video_id(url)
     if video_id:
-        # Try v1.x API first, fall back to legacy
         result = _fetch_transcript_v1(video_id) or _fetch_transcript_legacy(video_id)
         if result:
             transcript_text, transcript_segments = result
             logger.info("Got YouTube transcript via API for %s", video_id)
-        else:
-            logger.info("No transcript via API for %s, falling back to Whisper", video_id)
 
     if not transcript_text:
+        logger.info("No transcript via API for %s, falling back to Whisper", url)
         with tempfile.TemporaryDirectory() as tmpdir:
             audio_path = str(Path(tmpdir) / "audio.mp3")
             if _download_audio_ytdlp(url, audio_path) and Path(audio_path).exists():
@@ -149,10 +144,15 @@ async def extract_youtube(url: str) -> VideoData:
         likes=likes,
         comments=comments,
         engagement_rate=engagement_rate,
-        duration=meta.get("duration"),
+        duration=duration,
         upload_date=upload_date,
         hashtags=hashtags[:20],
         transcript=transcript_text,
         transcript_segments=transcript_segments,
         thumbnail_url=thumbnail,
     )
+
+
+async def extract_youtube(url: str) -> VideoData:
+    """Non-blocking wrapper — runs heavy sync work in thread pool."""
+    return await asyncio.to_thread(_extract_youtube_sync, url)
