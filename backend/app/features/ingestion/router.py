@@ -120,19 +120,43 @@ async def get_analysis(
                 thumbnail_url=v.thumbnail_url,
             )
 
-    # Use model_validate so dicts from DB are coerced to typed Pydantic models
-    return AnalysisResponse.model_validate({
-        "id": analysis.id,
-        "status": analysis.status,
-        "video_a": video_a,
-        "video_b": video_b,
-        "hook_analysis_a": analysis.hook_analysis_a,
-        "hook_analysis_b": analysis.hook_analysis_b,
-        "structure_a": analysis.structure_a,
-        "structure_b": analysis.structure_b,
-        "viral_patterns_a": analysis.viral_patterns_a,
-        "viral_patterns_b": analysis.viral_patterns_b,
-        "recommendations": analysis.recommendations,
-        "comparison_insights": analysis.comparison_insights,
-        "error_message": analysis.error_message,
-    })
+    def _safe(model_cls, data):
+        """Validate a single nested model, returning None on failure."""
+        if data is None:
+            return None
+        try:
+            return model_cls.model_validate(data)
+        except Exception as e:
+            logger.warning("Failed to validate %s: %s", model_cls.__name__, e)
+            return None
+
+    def _safe_list(model_cls, data):
+        """Validate a list of nested models, returning None on failure."""
+        if data is None:
+            return None
+        try:
+            return [model_cls.model_validate(item) for item in data]
+        except Exception as e:
+            logger.warning("Failed to validate list[%s]: %s", model_cls.__name__, e)
+            return None
+
+    from app.models.schemas import (
+        HookAnalysis, StructureSegment, ViralPatterns,
+        Recommendation, ComparisonInsights
+    )
+
+    return AnalysisResponse(
+        id=analysis.id,
+        status=analysis.status,
+        video_a=video_a,
+        video_b=video_b,
+        hook_analysis_a=_safe(HookAnalysis, analysis.hook_analysis_a),
+        hook_analysis_b=_safe(HookAnalysis, analysis.hook_analysis_b),
+        structure_a=_safe_list(StructureSegment, analysis.structure_a),
+        structure_b=_safe_list(StructureSegment, analysis.structure_b),
+        viral_patterns_a=_safe(ViralPatterns, analysis.viral_patterns_a),
+        viral_patterns_b=_safe(ViralPatterns, analysis.viral_patterns_b),
+        recommendations=_safe_list(Recommendation, analysis.recommendations),
+        comparison_insights=_safe(ComparisonInsights, analysis.comparison_insights),
+        error_message=analysis.error_message,
+    )

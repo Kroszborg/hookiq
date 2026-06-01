@@ -31,15 +31,28 @@ def _build_system_prompt(state: AgentState) -> str:
     meta_a = state.get("video_a_meta", {})
     meta_b = state.get("video_b_meta", {})
 
+    def _fmt_num(v, suffix="") -> str:
+        """Format a number with commas, or return N/A if None."""
+        if v is None:
+            return "N/A"
+        try:
+            return f"{int(v):,}{suffix}"
+        except (TypeError, ValueError):
+            return str(v)
+
     def fmt(meta: dict, label: str) -> str:
         er = meta.get("engagement_rate")
         er_str = f"{er:.2f}%" if er is not None else "N/A"
         return (
-            f"Video {label}: {meta.get('title', 'Unknown')} by {meta.get('creator', 'Unknown')}\n"
-            f"  Platform: {meta.get('platform', 'unknown')} | Views: {meta.get('views', 'N/A'):,} | "
-            f"Likes: {meta.get('likes', 'N/A')} | Comments: {meta.get('comments', 'N/A')}\n"
-            f"  Engagement Rate: {er_str} | Followers: {meta.get('followers', 'N/A')} | "
-            f"Duration: {meta.get('duration', 'N/A')}s | Uploaded: {meta.get('upload_date', 'N/A')}"
+            f"Video {label}: {meta.get('title') or 'Unknown'} by {meta.get('creator') or 'Unknown'}\n"
+            f"  Platform: {meta.get('platform') or 'unknown'} | "
+            f"Views: {_fmt_num(meta.get('views'))} | "
+            f"Likes: {_fmt_num(meta.get('likes'))} | "
+            f"Comments: {_fmt_num(meta.get('comments'))}\n"
+            f"  Engagement Rate: {er_str} | "
+            f"Followers: {_fmt_num(meta.get('followers'))} | "
+            f"Duration: {meta.get('duration') or 'N/A'}s | "
+            f"Uploaded: {meta.get('upload_date') or 'N/A'}"
         )
 
     return f"""You are HookIQ, an expert video content analyst helping creators understand why videos perform differently.
