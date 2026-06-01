@@ -205,34 +205,31 @@ Return JSON array (exactly 5 items):
 
 
 async def run_full_analysis(video_a: VideoData, video_b: VideoData) -> dict[str, Any]:
-    """Run all analysis sequentially to avoid Gemini free-tier rate limits."""
+    """
+    Run analysis sequentially. Groq free tier allows 30 RPM.
+    Each Groq call takes ~2-3s so we don't need artificial sleeps —
+    the _with_retry backoff handles any actual 429s.
+    """
     seg_a = video_a.transcript_segments or []
     seg_b = video_b.transcript_segments or []
-    dur_a = video_a.duration or 60
-    dur_b = video_b.duration or 60
+    dur_a = float(video_a.duration or 60)
+    dur_b = float(video_b.duration or 60)
 
-    logger.info("Starting intelligence analysis (sequential to respect rate limits)...")
+    logger.info("Starting intelligence analysis (8 sequential Groq calls)...")
 
     hook_a = await _analyze_hook(video_a.transcript or "", seg_a)
-    await asyncio.sleep(2)
     hook_b = await _analyze_hook(video_b.transcript or "", seg_b)
-    await asyncio.sleep(2)
     struct_a = await _analyze_structure(video_a.transcript or "", seg_a, dur_a)
-    await asyncio.sleep(2)
     struct_b = await _analyze_structure(video_b.transcript or "", seg_b, dur_b)
-    await asyncio.sleep(2)
     viral_a = await _analyze_viral_patterns(
         video_a.transcript or "",
         {"engagement_rate": video_a.engagement_rate, "views": video_a.views}
     )
-    await asyncio.sleep(2)
     viral_b = await _analyze_viral_patterns(
         video_b.transcript or "",
         {"engagement_rate": video_b.engagement_rate, "views": video_b.views}
     )
-    await asyncio.sleep(2)
     comparison = await _generate_comparison(video_a, video_b)
-    await asyncio.sleep(2)
     recs = await _generate_recommendations(video_a, video_b)
 
     logger.info("Intelligence analysis complete")

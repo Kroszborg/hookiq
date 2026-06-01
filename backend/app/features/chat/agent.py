@@ -177,5 +177,7 @@ async def stream_agent_response(
         full_response += chunk
         yield chunk, []
 
-    citation_tags = [c["tag"] for c in citations if c["tag"] in full_response or True]
-    yield "", citations
+    # Return only citations whose tags actually appear in the response
+    cited = [c for c in citations if c.get("tag", "") in full_response]
+    # If LLM cited none explicitly, return all retrieved chunks (still relevant)
+    yield "", cited if cited else citations

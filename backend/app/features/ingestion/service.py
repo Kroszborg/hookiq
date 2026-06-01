@@ -117,9 +117,13 @@ async def run_analysis_pipeline(analysis_id: str, url_a: str, url_b: str) -> Non
             extractor_a = get_extractor(platform_a)
             extractor_b = get_extractor(platform_b)
 
-            video_a_data, video_b_data = await asyncio.gather(
-                extractor_a(url_a),
-                extractor_b(url_b),
+            # 120s timeout per video (long for audio download + Whisper)
+            video_a_data, video_b_data = await asyncio.wait_for(
+                asyncio.gather(
+                    extractor_a(url_a),
+                    extractor_b(url_b),
+                ),
+                timeout=240,
             )
 
             await _emit(queue, PROGRESS_STEPS[2], 2)
@@ -151,7 +155,9 @@ async def run_analysis_pipeline(analysis_id: str, url_a: str, url_b: str) -> Non
 
             # Update analysis record
             result = await db.execute(select(Analysis).where(Analysis.id == analysis_id))
-            analysis = result.scalar_one()
+            analysis = result.scalar_one_or_none()
+            if not analysis:
+                raise RuntimeError(f"Analysis {analysis_id} not found in DB after processing")
             analysis.video_a_id = video_a_db.id
             analysis.video_b_id = video_b_db.id
             analysis.status = "complete"

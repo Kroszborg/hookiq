@@ -53,13 +53,6 @@ export default function AnalysisPage({ params }: Props) {
     }
   };
 
-  // Pull transcript segments from the VideoCard data
-  // The backend stores transcript but not transcript_segments in VideoCardResponse
-  // We parse from the transcript text directly for display
-  const getTranscriptSegments = (transcript: string | null | undefined) => {
-    if (!transcript) return [];
-    return []; // Would need backend support for timed segments in VideoCardResponse
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -147,8 +140,7 @@ export default function AnalysisPage({ params }: Props) {
                     hook={analysis.hook_analysis_a}
                     patterns={analysis.viral_patterns_a}
                     structure={analysis.structure_a}
-                    transcript={(analysis.video_a as any).transcript}
-                    transcriptSegments={getTranscriptSegments((analysis.video_a as any).transcript)}
+                    transcript={analysis.video_a.transcript}
                   />
                 )}
                 {analysis.video_b && (
@@ -158,8 +150,7 @@ export default function AnalysisPage({ params }: Props) {
                     hook={analysis.hook_analysis_b}
                     patterns={analysis.viral_patterns_b}
                     structure={analysis.structure_b}
-                    transcript={(analysis.video_b as any).transcript}
-                    transcriptSegments={getTranscriptSegments((analysis.video_b as any).transcript)}
+                    transcript={analysis.video_b.transcript}
                   />
                 )}
               </div>

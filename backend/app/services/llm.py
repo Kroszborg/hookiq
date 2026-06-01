@@ -62,10 +62,13 @@ async def _groq_stream_text(
         temperature=0.7,
         max_tokens=2048,
     )
-    for chunk in stream:
-        delta = chunk.choices[0].delta.content
-        if delta:
-            yield delta
+    try:
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    except Exception as e:
+        logger.error("Groq stream interrupted: %s", e)
+        yield f"\n\n[Stream interrupted: {type(e).__name__}]"
 
 
 # ─────────────────────────────────────────────

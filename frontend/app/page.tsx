@@ -36,8 +36,17 @@ export default function HomePage() {
     try {
       const { analysis_id } = await startAnalysis(urlA.trim(), urlB.trim());
       router.push(`/analysis/${analysis_id}`);
-    } catch {
-      setError("Could not connect to server. Is the backend running?");
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: string }; status?: number } };
+      const detail = axiosErr?.response?.data?.detail;
+      const status = axiosErr?.response?.status;
+      if (status === 422 && detail) {
+        setError(detail); // URL validation error from backend
+      } else if (status && status >= 500) {
+        setError("Server error. Check that Docker containers are running.");
+      } else {
+        setError("Could not connect. Is the backend running at localhost:8000?");
+      }
       setLoading(false);
     }
   };

@@ -53,8 +53,8 @@ def upsert_chunks(
     client = get_qdrant_client()
     try:
         ensure_collection()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("ensure_collection skipped (may already exist): %s", e)
 
     points = [
         PointStruct(

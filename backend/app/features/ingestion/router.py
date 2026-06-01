@@ -34,8 +34,10 @@ async def analyze(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> AnalyzeResponse:
-    _validate_url(request.video_a_url, "Video A URL")
-    _validate_url(request.video_b_url, "Video B URL")
+    url_a = request.video_a_url.strip()
+    url_b = request.video_b_url.strip()
+    _validate_url(url_a, "Video A URL")
+    _validate_url(url_b, "Video B URL")
 
     analysis_id = str(uuid.uuid4())
     analysis = Analysis(
@@ -47,7 +49,7 @@ async def analyze(
     db.add(analysis)
     await db.commit()
 
-    background_tasks.add_task(run_analysis_pipeline, analysis_id, request.video_a_url, request.video_b_url)
+    background_tasks.add_task(run_analysis_pipeline, analysis_id, url_a, url_b)
     return AnalyzeResponse(analysis_id=analysis_id)
 
 

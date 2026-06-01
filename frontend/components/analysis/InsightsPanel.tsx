@@ -93,9 +93,14 @@ export function InsightsPanel({ analysis }: Props) {
                   {comparison_insights.winner === "tie" ? "Tied" : `Video ${comparison_insights.winner}`}
                 </p>
               </div>
-              {comparison_insights.performance_delta_pct > 0 && (
+              {comparison_insights.performance_delta_pct > 0 && comparison_insights.winner !== "tie" && (
                 <span className="font-mono text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-lg shrink-0">
-                  +{comparison_insights.performance_delta_pct.toFixed(1)}% ER
+                  +{Math.min(comparison_insights.performance_delta_pct, 999).toFixed(1)}% ER
+                </span>
+              )}
+              {comparison_insights.winner === "tie" && (
+                <span className="font-mono text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2 py-1 rounded-lg shrink-0">
+                  Tied
                 </span>
               )}
             </div>
