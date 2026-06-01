@@ -51,15 +51,8 @@ def _download_audio_ytdlp(url: str, output_path: str) -> bool:
 
 
 def _transcribe_with_whisper(audio_path: str) -> tuple[str, list[dict]]:
-    from faster_whisper import WhisperModel
-    from app.config import get_settings
-    settings = get_settings()
-    model = WhisperModel(settings.WHISPER_MODEL, device=settings.WHISPER_DEVICE, compute_type=settings.WHISPER_COMPUTE_TYPE)
-    segments, _ = model.transcribe(audio_path, beam_size=5)
-    segs = list(segments)
-    full_text = " ".join(s.text.strip() for s in segs)
-    seg_dicts = [{"start": s.start, "end": s.end, "text": s.text.strip()} for s in segs]
-    return full_text, seg_dicts
+    from app.services.whisper import transcribe
+    return transcribe(audio_path)
 
 
 def _extract_instagram_sync(url: str) -> VideoData:

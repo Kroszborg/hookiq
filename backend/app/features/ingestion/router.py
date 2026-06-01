@@ -17,12 +17,27 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze", tags=["ingestion"])
 
 
+def _validate_url(url: str, label: str) -> None:
+    """Reject URLs that are clearly not YouTube or Instagram."""
+    url_lower = url.lower().strip()
+    is_yt = any(x in url_lower for x in ["youtube.com", "youtu.be"])
+    is_ig = "instagram.com" in url_lower
+    if not (is_yt or is_ig):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{label} must be a YouTube or Instagram URL. Got: {url[:80]}"
+        )
+
+
 @router.post("", response_model=AnalyzeResponse)
 async def analyze(
     request: AnalyzeRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ) -> AnalyzeResponse:
+    _validate_url(request.video_a_url, "Video A URL")
+    _validate_url(request.video_b_url, "Video B URL")
+
     analysis_id = str(uuid.uuid4())
     analysis = Analysis(
         id=analysis_id,

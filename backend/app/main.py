@@ -13,6 +13,7 @@ from app.features.history.router import router as history_router
 from app.features.ingestion.router import router as ingestion_router
 from app.services.embeddings import get_embedding_model
 from app.services.qdrant import ensure_collection
+from app.services.whisper import get_whisper_model
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,6 +50,8 @@ async def lifespan(app: FastAPI):
 
     get_embedding_model()
     logger.info("Embedding model loaded")
+    get_whisper_model()
+    logger.info("Whisper model loaded")
 
     await _wait_for_qdrant()
     try:
