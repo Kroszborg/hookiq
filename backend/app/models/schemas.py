@@ -64,11 +64,11 @@ class VideoCardResponse(BaseModel):
 # ── Intelligence Layer ─────────────────────────────────────────────────────
 
 class HookAnalysis(BaseModel):
-    """Scores for the first 5 seconds of a video, each 1–10."""
-    curiosity_score: int = Field(..., ge=1, le=10)
-    emotional_score: int = Field(..., ge=1, le=10)
-    clarity_score: int = Field(..., ge=1, le=10)
-    retention_potential: int = Field(..., ge=1, le=10)
+    """Scores for the first 5 seconds of a video, each 0–10."""
+    curiosity_score: int = Field(..., ge=0, le=10)
+    emotional_score: int = Field(..., ge=0, le=10)
+    clarity_score: int = Field(..., ge=0, le=10)
+    retention_potential: int = Field(..., ge=0, le=10)
     summary: str
 
 
@@ -83,7 +83,7 @@ class StructureSegment(BaseModel):
 class ViralPattern(BaseModel):
     """Whether a viral pattern is present in the video."""
     present: bool
-    score: int = Field(..., ge=1, le=10)
+    score: int = Field(..., ge=0, le=10)  # 0 = absent, 1–10 = strength
     evidence: str = Field(..., description="Specific quote or technique from the transcript")
 
 
