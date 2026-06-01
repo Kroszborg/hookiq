@@ -35,7 +35,7 @@ class VideoData(BaseModel):
     likes: int | None = None
     comments: int | None = None
     engagement_rate: float | None = None
-    duration: int | None = None
+    duration: float | None = None  # yt-dlp returns fractional seconds; coerced to int at display time
     upload_date: str | None = None
     hashtags: list[str] = []
     transcript: str | None = None
@@ -55,7 +55,7 @@ class VideoCardResponse(BaseModel):
     likes: int | None
     comments: int | None
     engagement_rate: float | None = Field(None, description="(likes + comments) / views * 100")
-    duration: int | None = Field(None, description="Duration in seconds")
+    duration: float | None = Field(None, description="Duration in seconds (may be fractional)")
     upload_date: str | None
     hashtags: list[str]
     thumbnail_url: str | None
@@ -74,7 +74,7 @@ class HookAnalysis(BaseModel):
 
 class StructureSegment(BaseModel):
     """One content segment identified by the AI (Hook, Story, Value, or CTA)."""
-    segment: Literal["Hook", "Story", "Value", "CTA"]
+    segment: str  # Accept any string — normalise to title case in validator
     start_time: float = Field(..., description="Seconds from video start")
     end_time: float
     summary: str

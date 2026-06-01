@@ -25,7 +25,7 @@ class Video(Base):
     likes: Mapped[int | None] = mapped_column(Integer)
     comments: Mapped[int | None] = mapped_column(Integer)
     engagement_rate: Mapped[float | None] = mapped_column(Float)
-    duration: Mapped[int | None] = mapped_column(Integer)  # seconds
+    duration: Mapped[float | None] = mapped_column(Float)  # seconds (float from yt-dlp)
     upload_date: Mapped[str | None] = mapped_column(String(20))
     hashtags: Mapped[list | None] = mapped_column(JSON)
     transcript: Mapped[str | None] = mapped_column(Text)

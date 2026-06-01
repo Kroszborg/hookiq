@@ -14,8 +14,9 @@ export function formatNumber(n: number | null | undefined): string {
 
 export function formatDuration(seconds: number | null | undefined): string {
   if (seconds == null) return "N/A";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+  const total = Math.floor(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 

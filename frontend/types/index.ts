@@ -24,7 +24,7 @@ export interface HookAnalysis {
 }
 
 export interface StructureSegment {
-  segment: "Hook" | "Story" | "Value" | "CTA";
+  segment: string;  // "Hook" | "Story" | "Value" | "CTA" or lowercase variants
   start_time: number;
   end_time: number;
   summary: string;
