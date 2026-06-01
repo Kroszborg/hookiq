@@ -55,23 +55,33 @@ def _build_system_prompt(state: AgentState) -> str:
             f"Uploaded: {meta.get('upload_date') or 'N/A'}"
         )
 
-    return f"""You are HookIQ, an expert video content analyst helping creators understand why videos perform differently.
+    # Determine which video is stronger for the LLM context
+    er_a = meta_a.get("engagement_rate")
+    er_b = meta_b.get("engagement_rate")
+    if er_a is not None and er_b is not None:
+        performance_note = f"Video {'A' if er_a > er_b else 'B'} has a higher engagement rate ({er_a:.2f}% vs {er_b:.2f}%)."
+    elif er_b is not None:
+        performance_note = f"Video B has measurable engagement ({er_b:.2f}%). Video A's engagement cannot be calculated (no view data from Instagram)."
+    elif er_a is not None:
+        performance_note = f"Video A has measurable engagement ({er_a:.2f}%). Video B's engagement cannot be calculated."
+    else:
+        performance_note = "Neither video has computable engagement rate. Compare based on likes, comments, and content quality."
 
-You have access to two videos that have been analyzed:
+    return f"""You are HookIQ, an expert video content analyst. Your job is to help creators understand why videos perform differently and how to improve their content.
 
+VIDEOS BEING COMPARED:
 {fmt(meta_a, 'A')}
 
 {fmt(meta_b, 'B')}
 
-CRITICAL RULES:
-1. ALWAYS cite sources using [A-Chunk-N] or [B-Chunk-N] format for every claim.
-2. Never make claims without citing a specific chunk.
-3. End every response with a "Sources:" section listing all cited chunks.
-4. Use the retrieved context below to answer questions.
-5. Be specific, data-driven, and actionable.
-6. When asked follow-up questions, remember the video context from this conversation.
+PERFORMANCE CONTEXT: {performance_note}
 
-Retrieved Context:
+CITATION RULES (follow strictly):
+- Cite every factual claim with [A-Chunk-N] or [B-Chunk-N]
+- DO NOT add a "Sources:" section at the end — citations will be shown automatically in the UI
+- If data is unavailable (e.g. Instagram views=N/A), say so clearly and base analysis on likes/comments/transcript instead
+
+RETRIEVED TRANSCRIPT CONTEXT:
 {state.get("retrieved_context", "No context retrieved yet.")}"""
 
 

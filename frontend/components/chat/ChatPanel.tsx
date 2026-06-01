@@ -48,14 +48,11 @@ function Bubble({ msg }: { msg: ChatMessage }) {
           <span className="inline-block h-3.5 w-0.5 bg-white/40 animate-pulse ml-0.5 align-middle" />
         )}
 
-        {/* Citations */}
+        {/* Citations — deduplicated, shown only if present */}
         {!isUser && msg.citations && msg.citations.length > 0 && (
           <div className="mt-2 pt-2 border-t border-border/20">
-            <p className="font-mono text-[9px] text-muted-foreground/50 uppercase tracking-wider mb-1.5">
-              Sources
-            </p>
             <div className="flex flex-wrap gap-1">
-              {msg.citations.map((c, i) => (
+              {Array.from(new Map(msg.citations.map(c => [c.tag, c])).values()).map((c, i) => (
                 <CitationTag key={i} c={c} />
               ))}
             </div>

@@ -73,11 +73,7 @@ Return JSON array (exactly 4 items):
   {{"segment": "Value", "start_time": <float>, "end_time": <float>, "summary": "<what happens>"}},
   {{"segment": "CTA", "start_time": <float>, "end_time": {dur}.0, "summary": "<what happens>"}}
 ]"""
-    try:
-        result = await _with_retry(lambda: generate_json(prompt), "structure_analysis")
-        return result if isinstance(result, list) else []
-    except Exception as e:
-        logger.warning("Structure analysis failed: %s", e)
+    def _default_segments():
         q = dur / 4
         return [
             {"segment": "Hook", "start_time": 0, "end_time": q, "summary": "Opening hook"},
@@ -85,6 +81,21 @@ Return JSON array (exactly 4 items):
             {"segment": "Value", "start_time": q * 2, "end_time": q * 3, "summary": "Value delivery"},
             {"segment": "CTA", "start_time": q * 3, "end_time": dur, "summary": "Call to action"},
         ]
+
+    try:
+        result = await _with_retry(lambda: generate_json(prompt), "structure_analysis")
+        # Groq sometimes wraps the list in a dict e.g. {"segments": [...]}
+        if isinstance(result, list) and len(result) > 0:
+            return result
+        if isinstance(result, dict):
+            for key in ("segments", "structure", "items", "data", "timeline"):
+                if key in result and isinstance(result[key], list) and len(result[key]) > 0:
+                    return result[key]
+        logger.warning("Structure analysis returned unexpected format, using defaults")
+        return _default_segments()
+    except Exception as e:
+        logger.warning("Structure analysis failed: %s", e)
+        return _default_segments()
 
 
 async def _analyze_viral_patterns(transcript: str, metadata: dict) -> dict[str, Any]:
