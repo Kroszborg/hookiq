@@ -45,7 +45,7 @@ export default function HomePage() {
       } else if (status && status >= 500) {
         setError("Server error. Check that Docker containers are running.");
       } else {
-        setError("Could not connect. Is the backend running at localhost:8000?");
+        setError("Could not connect to the backend. Check that the API server is running.");
       }
       setLoading(false);
     }
