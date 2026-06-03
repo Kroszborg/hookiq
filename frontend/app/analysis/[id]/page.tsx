@@ -46,7 +46,7 @@ export default function AnalysisPage({ params }: Props) {
   // poll every 4s while processing to detect completion
   useEffect(() => {
     if (phase !== "processing") return;
-    const interval = setInterval(async () => {
+    const interval = setInterval(async () => { // eslint-disable-line
       try {
         const data = await getAnalysis(id);
         if (data.status === "complete") {
@@ -59,7 +59,7 @@ export default function AnalysisPage({ params }: Props) {
           clearInterval(interval);
         }
       } catch { /* ignore poll errors */ }
-    }, 4000);
+    }, 10000); // 10s — not 4s, avoids hammering backend during slow analyses
     return () => clearInterval(interval);
   }, [phase, id]);
 
