@@ -31,6 +31,9 @@ backend/app/.cache/
 backend/data/
 qdrant_storage/
 
+# Instagram session cookies — never commit
+backend/instagram_cookies.txt
+
 # Environment — never commit secrets
 .env
 .env.local

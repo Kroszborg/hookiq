@@ -36,6 +36,7 @@ services:
       - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8}
     volumes:
       - ./backend/data:/app/data
+      - ./backend/instagram_cookies.txt:/app/instagram_cookies.txt:ro
     depends_on:
       - qdrant
 
