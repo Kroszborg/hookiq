@@ -193,7 +193,7 @@ export default function HomePage() {
                   {
                     label: "🐕 YouTube vs Instagram",
                     a: "https://www.youtube.com/shorts/bFbLnst8Kqc",
-                    b: "https://www.instagram.com/reel/C8Lk2-yRzOe/",
+                    b: "https://www.instagram.com/reels/DXGRBV2ifVe/",
                     desc: "Cross-platform comparison",
                   },
                   {

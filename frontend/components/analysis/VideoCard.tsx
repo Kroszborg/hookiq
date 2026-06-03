@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { cn, engagementBg, formatDuration, formatNumber } from "@/lib/utils";
 import type { VideoCard as VideoCardType, HookAnalysis, ViralPatterns, StructureSegment } from "@/types";
 import { ViralScore } from "./ViralScore";
@@ -28,6 +31,24 @@ function PlatformBadge({ platform }: { platform: string }) {
   );
 }
 
+function PlatformIcon({ platform }: { platform: string }) {
+  if (platform === "instagram") return (
+    <svg className="h-8 w-8 text-pink-400/30" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+    </svg>
+  );
+  if (platform === "tiktok") return (
+    <svg className="h-8 w-8 text-cyan-400/30" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.28 8.28 0 004.84 1.56V6.79a4.85 4.85 0 01-1.07-.1z"/>
+    </svg>
+  );
+  return (
+    <svg className="h-8 w-8 text-red-400/30" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-0.5">
@@ -38,30 +59,33 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export function VideoCard({ video, label, hook, patterns, structure, transcript }: Props) {
+  const [imgFailed, setImgFailed] = useState(false);
   const hasViews = video.views !== null && video.views !== undefined;
   const rawEngagement = (video.likes ?? 0) + (video.comments ?? 0);
+  const showThumbnail = video.thumbnail_url && !imgFailed;
 
   return (
     <div className="bg-white/[0.02] border border-border/40 rounded-xl overflow-hidden">
       {/* Thumbnail */}
       <div className="relative aspect-video bg-white/[0.03]">
-        {video.thumbnail_url ? (
+        {showThumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={video.thumbnail_url}
+            src={video.thumbnail_url!}
             alt=""
             className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            onError={() => setImgFailed(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <svg className="h-8 w-8 text-white/10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+            <PlatformIcon platform={video.platform} />
+            <span className="font-mono text-[9px] text-muted-foreground/30 uppercase tracking-widest">
+              {video.platform} · no preview
+            </span>
           </div>
         )}
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+
+        <div className="absolute top-2.5 left-2.5">
           <span className="bg-background/90 font-mono text-[9px] tracking-widest uppercase px-2 py-0.5 rounded border border-border/40">
             Video {label}
           </span>
@@ -78,12 +102,11 @@ export function VideoCard({ video, label, hook, patterns, structure, transcript 
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {/* Title */}
         {video.title && (
           <p className="text-sm font-medium leading-snug line-clamp-2">{video.title}</p>
         )}
 
-        {/* Creator + Viral Score row */}
+        {/* Creator + Viral Score */}
         <div className="flex items-start justify-between gap-3">
           {video.creator && (
             <div className="flex items-center gap-2.5 min-w-0">
@@ -116,6 +139,13 @@ export function VideoCard({ video, label, hook, patterns, structure, transcript 
                 {video.engagement_rate.toFixed(2)}%
               </span>
               <span className="text-xs ml-1.5 opacity-70">engagement rate</span>
+            </>
+          ) : video.engagement_rate != null ? (
+            <>
+              <span className="font-mono text-base font-bold tabular-nums">
+                {video.engagement_rate.toFixed(2)}%
+              </span>
+              <span className="text-xs ml-1.5 opacity-70">follower ER</span>
             </>
           ) : (
             <div>
