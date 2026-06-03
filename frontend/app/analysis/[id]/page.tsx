@@ -42,6 +42,27 @@ export default function AnalysisPage({ params }: Props) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Polling fallback: if SSE drops and misses the "done" event,
+  // poll every 4s while processing to detect completion
+  useEffect(() => {
+    if (phase !== "processing") return;
+    const interval = setInterval(async () => {
+      try {
+        const data = await getAnalysis(id);
+        if (data.status === "complete") {
+          setAnalysis(data);
+          setPhase("complete");
+          clearInterval(interval);
+        } else if (data.status === "failed") {
+          setPhase("error");
+          setErrorMsg(data.error_message || "Analysis failed.");
+          clearInterval(interval);
+        }
+      } catch { /* ignore poll errors */ }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [phase, id]);
+
   const handleReanalyze = async () => {
     if (!analysis?.video_a?.url || !analysis?.video_b?.url) return;
     setReanalyzing(true);
