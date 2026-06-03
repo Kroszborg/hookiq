@@ -12,12 +12,24 @@ from app.models.schemas import VideoData
 logger = logging.getLogger(__name__)
 
 
+def _cookies_file() -> list[str]:
+    """Return --cookies flag if a cookies file exists (enables authenticated Instagram scraping)."""
+    import os
+    paths = [
+        "/app/instagram_cookies.txt",           # Docker container path
+        os.path.expanduser("~/instagram_cookies.txt"),  # VM home dir
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            logger.info("Using Instagram cookies from %s", p)
+            return ["--cookies", p]
+    return []
+
+
 def _get_ytdlp_metadata(url: str) -> dict:
     try:
-        result = subprocess.run(
-            ["yt-dlp", "--dump-json", "--no-playlist", "--skip-download", url],
-            capture_output=True, text=True, timeout=90,
-        )
+        cmd = ["yt-dlp", "--dump-json", "--no-playlist", "--skip-download"] + _cookies_file() + [url]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
         if result.returncode == 0 and result.stdout.strip():
             return json.loads(result.stdout.strip())
     except Exception as e:
@@ -39,11 +51,9 @@ def _get_follower_count_sync(username: str) -> int | None:
 
 def _download_audio_ytdlp(url: str, output_path: str) -> bool:
     try:
-        result = subprocess.run(
-            ["yt-dlp", "--extract-audio", "--audio-format", "mp3",
-             "--audio-quality", "5", "--no-playlist", "-o", output_path, url],
-            capture_output=True, text=True, timeout=300,
-        )
+        cmd = ["yt-dlp", "--extract-audio", "--audio-format", "mp3",
+               "--audio-quality", "5", "--no-playlist"] + _cookies_file() + ["-o", output_path, url]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         return result.returncode == 0
     except Exception as e:
         logger.warning("yt-dlp audio download failed: %s", e)
