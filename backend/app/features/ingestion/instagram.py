@@ -65,9 +65,11 @@ def _extract_instagram_sync(url: str) -> VideoData:
     likes = meta.get("like_count")
     comments = meta.get("comment_count")
 
+    # Prefer view-based ER; fall back to follower-based ER (standard Instagram metric)
     engagement_rate = None
-    if views and views > 0 and (likes is not None or comments is not None):
-        engagement_rate = round(((likes or 0) + (comments or 0)) / views * 100, 4)
+    interactions = (likes or 0) + (comments or 0)
+    if views and views > 0 and interactions:
+        engagement_rate = round(interactions / views * 100, 4)
 
     upload_date_raw = meta.get("upload_date", "")
     upload_date = None
@@ -91,6 +93,11 @@ def _extract_instagram_sync(url: str) -> VideoData:
     )
     if not followers and uploader:
         followers = _get_follower_count_sync(uploader)
+
+    # If no view-based ER, compute follower-based ER (standard Instagram KPI when views unavailable)
+    if engagement_rate is None and followers and followers > 0 and interactions:
+        engagement_rate = round(interactions / followers * 100, 4)
+        logger.info("Using follower-based ER for %s: %.2f%%", uploader, engagement_rate)
 
     # Transcript via Whisper
     transcript_text: str | None = None

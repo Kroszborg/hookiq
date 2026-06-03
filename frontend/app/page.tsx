@@ -176,6 +176,39 @@ export default function HomePage() {
             <p className="text-[11px] text-muted-foreground/50 text-center font-mono">
               YouTube Shorts · Instagram Reels · TikTok
             </p>
+
+            {/* Example pairs */}
+            <div className="pt-1">
+              <p className="text-[10px] text-muted-foreground/40 font-mono tracking-wider uppercase text-center mb-2">
+                Try an example
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  {
+                    label: "🍔 Food vs Food",
+                    a: "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+                    b: "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+                    desc: "Two food review Shorts",
+                  },
+                  {
+                    label: "📱 Two Shorts",
+                    a: "https://www.youtube.com/shorts/H2DM4AC62t4",
+                    b: "https://www.youtube.com/shorts/7vsUjoQpc0Y",
+                    desc: "Compare any two YouTube Shorts",
+                  },
+                ].map((ex) => (
+                  <button
+                    key={ex.label}
+                    onClick={() => { setUrlA(ex.a); setUrlB(ex.b); }}
+                    disabled={loading}
+                    className="text-left bg-white/[0.03] hover:bg-white/[0.06] border border-border/30 hover:border-border/60 rounded-lg px-3 py-2.5 transition-all disabled:opacity-40"
+                  >
+                    <p className="text-xs font-medium">{ex.label}</p>
+                    <p className="text-[10px] text-muted-foreground/50 mt-0.5">{ex.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
           </motion.div>
 
           {/* Feature list */}

@@ -47,7 +47,12 @@ export function VideoCard({ video, label, hook, patterns, structure, transcript 
       <div className="relative aspect-video bg-white/[0.03]">
         {video.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" />
+          <img
+            src={video.thumbnail_url}
+            alt=""
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <svg className="h-8 w-8 text-white/10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
